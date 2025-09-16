@@ -1,5 +1,6 @@
 package org.cloudburstmc.protocolparser.type;
 
+import com.google.gson.JsonObject;
 import com.nukkitx.digraph.DiGraph;
 import com.nukkitx.digraph.DiGraphNode;
 import lombok.AccessLevel;
@@ -28,5 +29,17 @@ public class BedrockLink extends BedrockStructure {
     @Override
     public String toString() {
         return "<a href=\"../types/" + getSafeTypeName(type) + ".md\">" + StringEscapeUtils.escapeHtml4(type) + "</a>";
+    }
+
+    @Override
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("name", name);
+
+        JsonObject typeObj = new JsonObject();
+        typeObj.addProperty("ref", getSafeTypeName(type));
+        json.add("type", typeObj);
+
+        return json;
     }
 }

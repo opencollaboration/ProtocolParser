@@ -1,5 +1,9 @@
 package org.cloudburstmc.protocolparser;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.nukkitx.digraph.DiGraph;
 import com.nukkitx.digraph.parser.GraphParser;
 import org.cloudburstmc.protocolparser.type.BedrockType;
@@ -19,6 +23,11 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 public class ProtocolParser {
+
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .disableHtmlEscaping()
+            .create();
 
     private final Path inputPath;
     private final Path outputPath;
@@ -44,7 +53,8 @@ public class ProtocolParser {
         this.generateEnums();
         this.generatePackets();
         this.generateTypes();
-        this.generateMarkdown();
+        //this.generateMarkdown();
+        this.generateJsons();
     }
 
     private void cleanPath(Path path) throws IOException {
@@ -172,5 +182,62 @@ public class ProtocolParser {
                     .append(packet.getName()).append("](packets/").append(packet.getName()).append(".md) |\n");
         }
         Files.write(packetsPath, builder.toString().getBytes(UTF_8), TRUNCATE_EXISTING, CREATE);
+    }
+
+    private void generateJsons() throws IOException {
+        // Enums -> /enums/*.json
+        Path enumsDir = this.outputPath.resolve("enums");
+        Files.createDirectories(enumsDir);
+
+        for (BedrockEnum bedrockEnum : enums.values()) {
+            String fileName = bedrockEnum.getName().replace("::", "_") + ".json";
+            Path enumPath = enumsDir.resolve(fileName);
+
+            String json = GSON.toJson(bedrockEnum.toJson());
+            Files.write(enumPath, json.getBytes(UTF_8), TRUNCATE_EXISTING, CREATE);
+        }
+
+        // Packets -> /packets/*.json
+        Path packetsDir = this.outputPath.resolve("packets");
+        Files.createDirectories(packetsDir);
+
+        for (BedrockPacket packet : packets.values()) {
+            String safe = packet.getName().replaceAll("[\\\\/:*?\"<>|]", "");
+            Path packetPath = packetsDir.resolve(safe + ".json");
+
+            String json = GSON.toJson(packet.toJson());
+            Files.write(packetPath, json.getBytes(UTF_8), TRUNCATE_EXISTING, CREATE);
+        }
+
+        // Types -> /types/*.json
+        Path typesDir = this.outputPath.resolve("types");
+        Files.createDirectories(typesDir);
+
+        for (BedrockType type : types.values()) {
+            String safe = type.getName().replaceAll("[\\\\/:*?\"<>|]", "");
+            Path typePath = typesDir.resolve(safe + ".json");
+
+            String json = GSON.toJson(type.toJson());
+            Files.write(typePath, json.getBytes(UTF_8), TRUNCATE_EXISTING, CREATE);
+        }
+
+        // packets.json (index)
+        Path packetsIndexPath = this.outputPath.resolve("packets.json");
+
+        List<BedrockPacket> packetList = new ArrayList<>(this.packets.values());
+        packetList.sort(null); // uses Comparable (by ID, per your class)
+
+        JsonArray indexArray = new JsonArray();
+        for (BedrockPacket p : packetList) {
+            String safe = p.getName().replaceAll("[\\\\/:*?\"<>|]", "");
+            JsonObject entry = new JsonObject();
+            entry.addProperty("id", p.getId());
+            entry.addProperty("name", p.getName());
+            entry.addProperty("file", "packets/" + safe + ".json"); // relative path
+            indexArray.add(entry);
+        }
+
+        String indexJson = GSON.toJson(indexArray);
+        Files.write(packetsIndexPath, indexJson.getBytes(UTF_8), TRUNCATE_EXISTING, CREATE);
     }
 }

@@ -4,13 +4,14 @@ import com.nukkitx.digraph.DiGraph;
 import com.nukkitx.digraph.DiGraphEdge;
 import com.nukkitx.digraph.DiGraphNode;
 import org.apache.commons.text.StringEscapeUtils;
+import org.cloudburstmc.protocolparser.JsonParsable;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public abstract class BedrockStructure {
+public abstract class BedrockStructure implements JsonParsable {
 
     private static final Pattern SPLIT_PATTERN = Pattern.compile(", ", Pattern.MULTILINE);
     private static final Pattern INTEGER_PATTERN = Pattern.compile("^(.+): (-?[0-9]+)$", Pattern.MULTILINE);
@@ -91,6 +92,33 @@ public abstract class BedrockStructure {
             return "<a href=\"../enums/" + getSafeTypeName(matcher.group(1)) + ".md\">" + StringEscapeUtils.escapeHtml4(matcher.group(1)) + "</a>";
         }
         return notes;
+    }
+
+    /** Parsed representation for JSON: optional enumRef + optional free-text description */
+    protected static final class ParsedNotes {
+        final String enumRef;      // null if none
+        final String description;  // null/empty if none
+        ParsedNotes(String enumRef, String description) {
+            this.enumRef = (enumRef != null && !enumRef.isBlank()) ? enumRef : null;
+            this.description = (description != null && !description.isBlank()) ? description : null;
+        }
+    }
+
+    /**
+     * Extract a proper enum reference for JSON + any leftover description text.
+     * - If ENUM_PATTERN matches, group(1) is treated as the enum name.
+     * - The matched token is removed from the notes to produce 'description' (trimmed).
+     */
+    protected static ParsedNotes parseNotesForJson(String notes) {
+        if (notes == null) return new ParsedNotes(null, null);
+        Matcher m = ENUM_PATTERN.matcher(notes);
+        if (m.find()) {
+            String enumName = m.group(1);
+            // Remove the first enum token from the notes to get the residual description
+            String residual = (m.replaceFirst("")).trim();
+            return new ParsedNotes(getSafeTypeName(enumName), residual.isEmpty() ? null : residual);
+        }
+        return new ParsedNotes(null, notes.trim().isEmpty() ? null : notes.trim());
     }
 
     private static final Pattern NET_ID_PATTERN = Pattern.compile("^(Simple|Typed)(Server|Client)NetId<struct (.+),(?:unsigned int|int),0>$");

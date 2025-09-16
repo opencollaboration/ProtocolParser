@@ -1,5 +1,7 @@
 package org.cloudburstmc.protocolparser.type;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.nukkitx.digraph.DiGraph;
 import com.nukkitx.digraph.DiGraphNode;
 import lombok.AccessLevel;
@@ -57,5 +59,26 @@ public class BedrockCondition extends BedrockStructure {
         });
 
         return joiner.toString();
+    }
+
+    @Override
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("name", name);
+
+        JsonObject conditionsObj = new JsonObject();
+        for (Map.Entry<String, List<BedrockStructure>> entry : conditions.entrySet()) {
+            String conditionName = entry.getKey();
+            List<BedrockStructure> structures = entry.getValue();
+
+            JsonArray arr = new JsonArray();
+            for (BedrockStructure s : structures) {
+                arr.add(s.toJson());
+            }
+            conditionsObj.add(conditionName, arr);
+        }
+
+        json.add("conditions", conditionsObj);
+        return json;
     }
 }

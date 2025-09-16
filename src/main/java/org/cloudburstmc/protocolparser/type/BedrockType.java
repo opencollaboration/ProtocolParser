@@ -1,15 +1,18 @@
 package org.cloudburstmc.protocolparser.type;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.nukkitx.digraph.DiGraph;
 import com.nukkitx.digraph.DiGraphNode;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import org.cloudburstmc.protocolparser.JsonParsable;
 
 import java.util.Collections;
 import java.util.List;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class BedrockType {
+public class BedrockType implements JsonParsable {
     private final String name;
     private final List<BedrockStructure> structures;
 
@@ -40,6 +43,19 @@ public class BedrockType {
         }
         builder.append("</tbody></table>");
         return builder.toString();
+    }
+
+    @Override
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("name", getName());
+
+        JsonArray arr = new JsonArray();
+        for (BedrockStructure s : structures) {
+            arr.add(s.toJson());
+        }
+        json.add("structures", arr); // include empty array if none
+        return json;
     }
 
     public String getName() {

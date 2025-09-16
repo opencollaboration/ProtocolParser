@@ -1,5 +1,7 @@
 package org.cloudburstmc.protocolparser;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +23,7 @@ import java.util.regex.Pattern;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class BedrockEnum {
+public class BedrockEnum implements JsonParsable {
     private static final Pattern SPLIT_PATTERN = Pattern.compile("\n");
     private static final Pattern ENTRY_PATTERN = Pattern.compile(" = ");
 
@@ -58,6 +60,23 @@ public class BedrockEnum {
         });
 
         return builder.toString();
+    }
+
+    @Override
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("name", name);
+
+        JsonArray entries = new JsonArray();
+        values.forEach((enumName, value) -> {
+            JsonObject entry = new JsonObject();
+            entry.addProperty("name", enumName);
+            entry.addProperty("value", value);
+            entries.add(entry);
+        });
+
+        json.add("values", entries);
+        return json;
     }
 
     /*          HACK - Fix break lines           */

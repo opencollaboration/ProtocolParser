@@ -1,5 +1,7 @@
 package org.cloudburstmc.protocolparser.type;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.nukkitx.digraph.DiGraph;
 import com.nukkitx.digraph.DiGraphNode;
 import lombok.AccessLevel;
@@ -65,5 +67,41 @@ public class BedrockArray extends BedrockStructure {
         builder.append("</tbody></table>");
 
         return builder.toString();
+    }
+
+    @Override
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("name", name);
+
+        JsonObject typeObj = new JsonObject();
+        typeObj.addProperty("container", "array");
+
+        // Optional: enum + description parsed from notes
+        ParsedNotes pn = parseNotesForJson(notes);
+        if (pn.enumRef != null) {
+            typeObj.addProperty("enum", pn.enumRef);
+        }
+
+        // Size (if present)
+        if (size != null) {
+            typeObj.add("size", size.toJson());
+        }
+
+        // Element structure(s)
+        JsonArray elemArr = new JsonArray();
+        for (BedrockStructure s : element) {
+            if (s == null) continue;
+            elemArr.add(s.toJson());
+        }
+        typeObj.add("element", elemArr);
+
+        json.add("type", typeObj);
+
+        if (pn.description != null) {
+            json.addProperty("description", pn.description);
+        }
+
+        return json;
     }
 }

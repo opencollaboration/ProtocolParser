@@ -1,5 +1,6 @@
 package org.cloudburstmc.protocolparser;
 
+import com.google.gson.JsonObject;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,7 @@ import org.jsoup.select.Elements;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class BedrockPacket implements Comparable<BedrockPacket> {
+public class BedrockPacket implements Comparable<BedrockPacket>, JsonParsable {
     private final int id;
     private final String name;
     private final String purpose;
@@ -54,6 +55,30 @@ public class BedrockPacket implements Comparable<BedrockPacket> {
                 (purpose.isEmpty() ? "" : "**Purpose: " + purpose + "**  \n") +
                 (description.isEmpty() ? "" : '\n' + description + '\n') +
                 (type != null ? '\n' + type.toString() : "");
+    }
+
+    @Override
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("id", id);
+        json.addProperty("name", name);
+
+        if (!purpose.isEmpty()) {
+            json.addProperty("purpose", purpose);
+        } else {
+            json.add("purpose", null);
+        }
+
+        if (!description.isEmpty()) {
+            json.addProperty("description", description);
+        } else {
+            json.add("description", null);
+        }
+
+        if (type != null) {
+            json.add("type", type.toJson());
+        }
+        return json;
     }
 
     @Override
